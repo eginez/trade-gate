@@ -1,0 +1,18 @@
+--- a/zng/cmake.rs
++++ zng/cmake.rs	2026-11-07 15:19:16.761073191 +0000
+@@ -7,6 +7,15 @@
+         .define("ZLIB_COMPAT", if compat { "ON" } else { "OFF" })
+         .define("ZLIB_ENABLE_TESTS", "OFF")
+         .define("WITH_GZFILEOP", "ON");
++    // Honor CMAKE_MAKE_PROGRAM from the environment (e.g. a hermetic
++    // ninja supplied by Bazel toolchains). The `cmake` crate does not
++    // read this variable itself, and cmake only accepts it as a -D
++    // cache entry — not from the environment — so pass it on as a
++    // define here. Without this, a Ninja generator fails with
++    // "CMAKE_MAKE_PROGRAM is not set" whenever ninja is not on PATH.
++    if let Ok(make_program) = env::var("CMAKE_MAKE_PROGRAM") {
++        cmake.define("CMAKE_MAKE_PROGRAM", &make_program);
++    }
+     if target.contains("s390x") {
+         // Enable hardware compression on s390x.
+         cmake

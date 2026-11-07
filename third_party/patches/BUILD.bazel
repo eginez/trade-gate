@@ -1,0 +1,6 @@
+# Patches applied to third-party crates via crate.annotation in
+# MODULE.bazel. Each patch is small, targeted, and documented in
+# its header — never a fork, just the minimal change needed to
+# make the crate work under Bazel's hermetic toolchains.
+
+exports_files(["libz-ng-sys-cmake-make-program.patch"])

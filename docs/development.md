@@ -60,16 +60,26 @@ Each of these was a real build failure on Bazel 9.3.2; do not
   under `data` (runtime runfiles, invisible to rustc), so test
   compilation failed. `data` stays for the runtime
   `POLICIES_PATH`/`ALLOWLIST_PATH` defaults.
-- `.bazelrc` (`build:macos` only): the macOS Bazel sandbox PATH
-  does not include `/opt/homebrew/bin`, so the `libz-ng-sys`
-  build script fails with "is `cmake` not installed?" even when
-  `brew install cmake` says 4.4.4 is installed. The macOS section
-  sets `--action_env=CMAKE=/opt/homebrew/bin/cmake` and runs Rust
-  build scripts outside the sandbox
-  (`--strategy=CargoBuildScriptRun=local`). Linux builds are
-  unaffected. On macOS, `cmake` itself is a hard requirement:
-  `libz-ng-sys` builds zlib-ng's C code through it, and `make`
-  comes with the Xcode Command Line Tools.
+- Hermetic cmake + ninja (`rules_foreign_cc` 0.17.0, binary mode):
+  `libz-ng-sys` builds zlib-ng's C code through cmake, and cmake
+  needs a build program. Both now come from Bazel-managed
+  prebuilt toolchains — no system cmake, make, or ninja is
+  required on any machine. `MODULE.bazel` registers
+  `tools.cmake(mode = "binary", version = "3.31.12")` and
+  `tools.ninja(mode = "binary", version = "1.13.2")`, and a
+  `crate.annotation` for `libz-ng-sys` hands the toolchains to its
+  build script (`CMAKE`, `CMAKE_GENERATOR=Ninja`,
+  `CMAKE_MAKE_PROGRAM`). One subtlety: the `cmake` crate never
+  reads `CMAKE_MAKE_PROGRAM` from the environment, and cmake only
+  accepts it as a `-D` cache entry — so a small patch in
+  `third_party/patches/` makes the crate's build script forward it
+  as a define (and it points at the real ninja binary, not the
+  `$(NINJA)` wrapper, which would need `REAL_NINJA` in the action
+  env). This replaced the old macOS `.bazelrc`
+  workaround, which pointed Bazel at Homebrew's cmake
+  (`CMAKE=/opt/homebrew/bin/cmake`) and ran build scripts outside
+  the sandbox — that file is deleted. The only host tools left
+  are the C compiler/linker from the system C++ toolchain.
 - `check_generated` genrule: snapshot pushes do not preserve
   file modes, so `tools/check-generated.sh` arrives non-executable.
   The `genrule` copies it and `chmod +x` the copy; `sh_test`
@@ -98,9 +108,8 @@ by skipping there. See `docs/policy.md` for the change workflow.
 `disk-cache` (build outputs, per OS + workflow), and
 `repository-cache` (module/crate downloads, shared across
 workflows). `.bazelversion` pins Bazel **9.3.2** — the version the
-build was verified against. The macOS job runs
-`brew install cmake` first (a no-op if already present); the
-repo `.bazelrc` handles the rest of the macOS sandbox setup.
+build was verified against. No cmake is installed in CI: it comes
+from the hermetic prebuilt toolchains (see above).
 First run on a cold cache downloads the toolchain and crates
 (~20 min); later runs reuse the caches.
 
@@ -201,6 +210,6 @@ machine with a real Docker daemon.
 - Real tickers, per-run cap, and rolling-window definition
   (see `docs/policy.md` — examples only today).
 - The trading script, built last, on the owner's word only.
-- `docs/` is done; the Bazel build on the owner's Mac is
-  verified only up to the `.bazelrc` cmake fix — a clean
-  `bazel build //...` there is still unconfirmed.
+- The hermetic cmake/ninja setup is verified on the Linux build
+  VM only so far — a clean `bazel build //...` on the owner's Mac
+  (where the old failure was) is still unconfirmed.

@@ -95,9 +95,9 @@ cargo build --release -p trade-gate-proxy
 
 > Verified 2026-11-07: `bazel build //...` and `bazel test //...`
 > (2/2) pass on the Linux build VM; `cargo test` is 17/17 and the
-> probe is 18/18. On macOS, `.bazelrc` points Bazel at Homebrew's
-> cmake (see `docs/development.md`); a clean `bazel build //...`
-> on the owner's Mac is still unconfirmed.
+> probe is 18/18. cmake and ninja are hermetic prebuilt toolchains
+> (rules_foreign_cc, binary mode — see `docs/development.md`), so
+> no system cmake is needed on any machine.
 
 ## Run the policy tests
 

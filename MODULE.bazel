@@ -10,8 +10,26 @@ module(
 )
 
 bazel_dep(name = "rules_rust", version = "0.70.0")
-bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "platforms", version = "1.0.0")
+# Hermetic cmake + ninja (prebuilt binaries, never built from source):
+# the libz-ng-sys build script needs cmake, and cmake needs a build
+# program. Both come from Bazel-managed toolchains now — no system
+# cmake, make, or ninja is required on any machine.
+bazel_dep(name = "rules_foreign_cc", version = "0.17.0")
+
+tools = use_extension("@rules_foreign_cc//foreign_cc:extensions.bzl", "tools")
+tools.cmake(
+    mode = "binary",
+    version = "3.31.12",
+)
+tools.ninja(
+    mode = "binary",
+    version = "1.13.2",
+)
+use_repo(tools, "rules_foreign_cc_toolchains")
+
+register_toolchains("@rules_foreign_cc_toolchains//:all")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
@@ -21,6 +39,44 @@ rust.toolchain(
 use_repo(rust, "rust_toolchains")
 
 crate = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+
+# Let the crate extension see the rules_foreign_cc repos (module
+# extensions are isolated from each other without this).
+inject_repo(crate, "rules_foreign_cc")
+
+# libz-ng-sys builds zlib-ng through cmake. Its build script only
+# knows how to exec `cmake` from env/PATH, so hand it the hermetic
+# toolchains: cmake binary + ninja as the build program.
+#
+# Two subtleties, both verified the hard way:
+# - The `cmake` crate honours CMAKE_GENERATOR from the environment,
+#   but it NEVER reads CMAKE_MAKE_PROGRAM, and cmake itself only
+#   accepts it as a -D cache entry — so the env var alone does
+#   nothing. The patch in third_party/patches/ makes the crate's
+#   build script forward CMAKE_MAKE_PROGRAM as a -D define.
+# - Point at the real ninja binary ($(REAL_NINJA)), not the
+#   $(NINJA) wrapper: the wrapper forwards to REAL_NINJA from its
+#   own environment, which the build script action does not have.
+# The `$${pwd}/` prefix is needed because build scripts do not run
+# in the execroot.
+crate.annotation(
+    build_script_data = [
+        "@rules_foreign_cc//toolchains:current_cmake_toolchain",
+        "@rules_foreign_cc//toolchains:current_ninja_toolchain",
+    ],
+    build_script_env = {
+        "CMAKE": "$${pwd}/$(CMAKE)",
+        "CMAKE_GENERATOR": "Ninja",
+        "CMAKE_MAKE_PROGRAM": "$${pwd}/$(REAL_NINJA)",
+    },
+    build_script_toolchains = [
+        "@rules_foreign_cc//toolchains:current_cmake_toolchain",
+        "@rules_foreign_cc//toolchains:current_ninja_toolchain",
+    ],
+    crate = "libz-ng-sys",
+    patches = ["//third_party/patches:libz-ng-sys-cmake-make-program.patch"],
+)
+
 crate.from_cargo(
     name = "crates",
     cargo_lockfile = "//:Cargo.lock",
