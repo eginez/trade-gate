@@ -1,1 +1,8 @@
-{"maxDollarsPerRun":1000,"rollingWindowDays":28,"symbols":["VOO","SCHD"]}
+{
+  "symbols": [
+    "VOO",
+    "SCHD"
+  ],
+  "maxDollarsPerRun": 1000,
+  "rollingWindowDays": 28
+}

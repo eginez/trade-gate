@@ -52,6 +52,12 @@ class Permit {
   maxDollars: Int(this > 0)?
 }
 
-class PolicySet {
-  permits: Listing<Permit>(isDistinctBy((p) -> p.action))
-}
+// The permits. Declared on the MODULE (not inside a class): the
+// policy file `amends` this module and fills this in. A `class
+// PolicySet` wrapper used to hold this property, which made the
+// module itself have no `permits` — real `pkl eval` failed with
+// "Cannot find property `permits` in module `PolicySet`", and the
+// failure was invisible until the Docker build first ran pkl,
+// because the JSON was hand-written and the check skips when pkl
+// is absent. Do not reintroduce the class wrapper.
+permits: Listing<Permit>(isDistinctBy((p) -> p.action))

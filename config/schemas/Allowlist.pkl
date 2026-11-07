@@ -4,18 +4,24 @@
 // may be bought, how much may be spent in one run, and how long the
 // rolling window is. The values live in config/policies/allowlist.pkl.
 
-class Allowlist {
-  // Symbols the script may buy. Checked in Rust against
-  // OrderLeg.instrument.symbol. Everything else is denied.
-  symbols: Listing<String>(length >= 1, isDistinct)
+// The properties are declared on the MODULE (not inside a class):
+// the policy file `amends` this module and fills these in. A `class
+// Allowlist` wrapper used to hold them, which made the module itself
+// have none of them — real `pkl eval` failed, and the failure was
+// invisible until the Docker build first ran pkl, because the JSON
+// was hand-written and the check skips when pkl is absent. Do not
+// reintroduce the class wrapper.
 
-  // Per-run dollar cap. Enforced in Rust as
-  // quantity * live quote price <= maxDollarsPerRun.
-  maxDollarsPerRun: Int(this > 0)
+// Symbols the script may buy. Checked in Rust against
+// OrderLeg.instrument.symbol. Everything else is denied.
+symbols: Listing<String>(length >= 1, isDistinct)
 
-  // Rolling window, in days. A second buy of the same symbol for the
-  // same account inside this window is a 409 and is not forwarded.
-  // NOTE: the window definition is NOT decided yet — this field is
-  // the shape of the decision, not the decision.
-  rollingWindowDays: Int(this > 0)
-}
+// Per-run dollar cap. Enforced in Rust as
+// quantity * live quote price <= maxDollarsPerRun.
+maxDollarsPerRun: Int(this > 0)
+
+// Rolling window, in days. A second buy of the same symbol for the
+// same account inside this window is a 409 and is not forwarded.
+// NOTE: the window definition is NOT decided yet — this field is
+// the shape of the decision, not the decision.
+rollingWindowDays: Int(this > 0)

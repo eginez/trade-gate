@@ -93,10 +93,20 @@ Each of these was a real build failure on Bazel 9.3.2; do not
 
 Pkl runs at **authoring/build time only** — there is no official
 Rust embedding. `pkl eval` renders JSON to `config/generated/`
-(checked in). The hand-generated JSON in the repo is in exact
-`pkl eval -f json` shape and marked as such; the Pkl CLI is not
-installed on the build VM, so `tools/check-generated.sh` exits 0
-by skipping there. See `docs/policy.md` for the change workflow.
+(checked in). Since 2026-11-07 the checked-in JSON is rendered by
+real Pkl 0.27.0, not hand-written: before that it was hand-written
+in the assumed `pkl eval -f json` shape, and the schemas were
+wrong in a way no tool caught — the properties lived inside
+`class PolicySet` / `class Allowlist` instead of on the module,
+so real `pkl eval` failed with "Cannot find property `permits`
+in module `PolicySet`". It stayed invisible because the Pkl CLI
+was not installed on the build VM (`tools/check-generated.sh`
+exits 0 by skipping there) and the Rust code only reads the JSON.
+The Docker proxy build was the first place real pkl ever ran.
+Lesson: schema properties belong on the module, and the generated
+JSON must be re-rendered with the real CLI after any schema or
+policy change — never hand-edited to match. See `docs/policy.md`
+for the change workflow.
 
 ## CI
 
