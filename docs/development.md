@@ -182,12 +182,17 @@ caps lack `CAP_NET_ADMIN` (`docker run` fails with `setns` /
 handshake timeout through the egress proxy). The Compose file as
 written cannot run there. Options: record the local run (the
 demo GIF in `demo/` was made that way), or run Compose on a
-machine with a real Docker daemon. **Podman test in progress
-(2026-11-07):** Podman is being tried on the same VM, since it
-does not need a daemon or a bridge — install + a hello-world
-container first, then the demo Compose run. Result pending; if
-Podman works there, the Compose file needs no changes (it is
-plain Compose: bridge/internal networks, healthchecks, profiles).
+machine with a real Docker daemon. **Podman tried and blocked
+(2026-11-07):** Podman 4.9.3 installs and loads images fine on
+the VM, but cannot run a single container — same host-level
+block as Docker, one layer deeper: creating namespaces works
+(`unshare` succeeds), but *joining* one is denied (`setns`
+EPERM under a seccomp filter; `/dev/fuse` is also absent).
+`--storage-driver vfs`, `--network none`, and `--privileged`
+all fail identically, so storage/network/privilege are not the
+issue. No container runtime that joins namespaces via `setns`
+(runc, crun) can work here. The Compose demo was not run and
+the musl proxy build is still untested on the VM.
 
 ## Conventions
 
