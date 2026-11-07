@@ -2,6 +2,8 @@
 # dependency of the proxy, and the Pkl sources are the source of
 # truth for it.
 
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+
 exports_files([
     "Cargo.toml",
     "Cargo.lock",
