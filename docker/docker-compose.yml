@@ -3,10 +3,10 @@
 # Three services, two networks. The test container can only talk to
 # the proxy. The proxy is the only container with (mock) internet.
 # The mock stands in for the broker API on the external leg — it is
-# NOT Schwab, and no real broker is ever contacted from this file.
+# No real broker is ever contacted from this file.
 #
 #   test-script --(internal only)--> proxy --(external)--> mock
-#                                        (in production: api.schwabapi.com)
+#                                        (in production: the broker API)
 #
 # Run the policy probe (fresh DB each time):
 #   docker compose down -v
@@ -34,6 +34,9 @@ services:
     image: trade-gate-proxy:latest
     container_name: trade-gate-proxy
     restart: "no"
+    # The upstream host is a mandatory startup argument — no default,
+    # no broker host hardcoded in the binary. Here it is the mock.
+    command: ["--upstream-host", "mock:18099"]
     # NO ports published to the host. Reachable only inside the
     # internal network, as `proxy:8080`.
     networks:
@@ -43,7 +46,6 @@ services:
       external: {}
     environment:
       PROXY_LISTEN: "0.0.0.0:8080"
-      UPSTREAM_HOST: "mock:18099"
       UPSTREAM_TLS: "false"
       POLICIES_PATH: /etc/trade-gate/policies.json
       ALLOWLIST_PATH: /etc/trade-gate/allowlist.json
@@ -65,7 +67,7 @@ services:
       timeout: 2s
       retries: 15
 
-  # Mock broker API. Stands in for api.schwabapi.com in tests.
+  # Mock broker API. Stands in for the broker API in tests.
   mock:
     build:
       context: ..
@@ -162,7 +164,11 @@ services:
     image: trade-gate-proxy:latest
     container_name: trade-gate-refresh
     restart: "no"
-    command: ["trade-gate-proxy", "refresh-token"]
+    # "refresh-token" is not a proxy mode (and never was — the old
+    # command was silently ignored). The refresh flow is still stubbed;
+    # until it exists this service just starts the proxy, which needs
+    # the same mandatory upstream argument.
+    command: ["--upstream-host", "mock:18099"]
     networks:
       - external
     environment:

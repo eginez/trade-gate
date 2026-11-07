@@ -1,0 +1,21 @@
+// Allowlist.pkl — schema ONLY. No data lives here.
+//
+// The allowlist is the named sets the permits refer to: which symbols
+// may be bought, how much may be spent in one run, and how long the
+// rolling window is. The values live in config/policies/allowlist.pkl.
+
+class Allowlist {
+  // Symbols the script may buy. Checked in Rust against
+  // OrderLeg.instrument.symbol. Everything else is denied.
+  symbols: Listing<String>(length >= 1, isDistinct)
+
+  // Per-run dollar cap. Enforced in Rust as
+  // quantity * live quote price <= maxDollarsPerRun.
+  maxDollarsPerRun: Int(this > 0)
+
+  // Rolling window, in days. A second buy of the same symbol for the
+  // same account inside this window is a 409 and is not forwarded.
+  // NOTE: the window definition is NOT decided yet — this field is
+  // the shape of the decision, not the decision.
+  rollingWindowDays: Int(this > 0)
+}

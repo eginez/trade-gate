@@ -4,7 +4,7 @@
 # the proxy's answers (200 forwarded / 403 with a reason / 409
 # duplicate / 400 invalid JSON). `mock_upstream.py` is a fake broker
 # on localhost that the proxy forwards to. Neither file trades
-# anything, and neither ever talks to Schwab.
+# anything, and neither ever talks to a real broker.
 #
 # Run locally (no Docker):
 #   ./run.sh

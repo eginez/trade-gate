@@ -59,8 +59,8 @@ proxy/                  Rust proxy (Pingora)
   src/db.rs             SQLite rolling-window buy history
   src/credentials.rs    credential-store stub interface
 config/
-  schemas/              Pkl schemas ONLY (PolicySet.pkl, SchwabAllowlist.pkl)
-  policies/             Pkl configs ONLY (schwab-policies.pkl, allowlist.pkl)
+  schemas/              Pkl schemas ONLY (PolicySet.pkl, Allowlist.pkl)
+  policies/             Pkl configs ONLY (policies.pkl, allowlist.pkl)
   generated/            pkl eval JSON output, checked in
 docker/
   docker-compose.yml    proxy + test-script, two networks
@@ -104,7 +104,7 @@ cargo build --release -p trade-gate-proxy
 # Unit tests (Rust, no network, no Docker)
 cargo test
 
-# End-to-end policy probe against a mock upstream (no Schwab, no Docker)
+# End-to-end policy probe against a mock upstream (no real broker, no Docker)
 python3 test-script/probe.py
 # or, with Docker (not verified on the build machine — no Docker there):
 #   docker compose -f docker/docker-compose.yml up --build \
@@ -127,12 +127,21 @@ on `127.0.0.1:18080` pointing at the mock, and asserts:
 
 ## Configuration
 
+The upstream host is a **mandatory startup argument** — there is no
+default and no broker host is hardcoded in the binary:
+
+```sh
+trade-gate-proxy --upstream-host <host:port>
+# e.g. --upstream-host 127.0.0.1:18099   (mock, in tests)
+```
+
+Starting without it exits with code 2 and prints usage.
+
 Environment (proxy):
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `PROXY_LISTEN` | `127.0.0.1:8080` | address the proxy listens on |
-| `UPSTREAM_HOST` | `api.schwabapi.com:443` | broker host (mock: `127.0.0.1:18099`) |
 | `UPSTREAM_TLS` | `true` | TLS to upstream (`false` for the mock) |
 | `POLICIES_PATH` | `config/generated/policies.json` | rendered Pkl permits |
 | `ALLOWLIST_PATH` | `config/generated/allowlist.json` | rendered Pkl allowlist |

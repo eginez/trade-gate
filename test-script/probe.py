@@ -2,7 +2,7 @@
 """trade-gate policy probe — NOT the trading script.
 
 Exercises the proxy's network policies against a mock upstream
-(test-script/mock_upstream.py), never against Schwab.
+(test-script/mock_upstream.py), never against a real broker.
 
 Local mode (default): starts the mock on 127.0.0.1:18099 and the
 proxy binary on 127.0.0.1:18080 (fresh temp SQLite DB), runs the
@@ -181,7 +181,6 @@ def main():
         env = dict(os.environ)
         env.update({
             "PROXY_LISTEN": f"127.0.0.1:{PROXY_PORT}",
-            "UPSTREAM_HOST": f"127.0.0.1:{MOCK_PORT}",
             "UPSTREAM_TLS": "false",
             "POLICIES_PATH": os.path.join(REPO, "config", "generated", "policies.json"),
             "ALLOWLIST_PATH": os.path.join(REPO, "config", "generated", "allowlist.json"),
@@ -192,7 +191,7 @@ def main():
             [sys.executable, os.path.join(HERE, "mock_upstream.py"), str(MOCK_PORT)],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         proxy = subprocess.Popen(
-            [proxy_bin], env=env,
+            [proxy_bin, "--upstream-host", f"127.0.0.1:{MOCK_PORT}"], env=env,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
             if not wait_health(f"http://127.0.0.1:{MOCK_PORT}/healthz", "mock"):

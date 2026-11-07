@@ -11,7 +11,7 @@ fi
 ROOT="$(dirname "$0")/.."
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-pkl eval "$ROOT/config/policies/schwab-policies.pkl" -f json > "$tmp/policies.json"
+pkl eval "$ROOT/config/policies/policies.pkl" -f json > "$tmp/policies.json"
 pkl eval "$ROOT/config/policies/allowlist.pkl" -f json > "$tmp/allowlist.json"
 diff -u "$ROOT/config/generated/policies.json" "$tmp/policies.json"
 diff -u "$ROOT/config/generated/allowlist.json" "$tmp/allowlist.json"

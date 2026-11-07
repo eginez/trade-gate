@@ -14,7 +14,7 @@
 //! and warns on every use, so nothing can accidentally trade with a
 //! stub in production.
 //!
-//! Real Schwab OAuth (authorization_code + refresh_token, 7-day
+//! Real broker OAuth (authorization_code + refresh_token, 7-day
 //! refresh expiry, client_secret_basic) is also NOT implemented yet.
 
 use std::sync::Mutex;
@@ -35,7 +35,7 @@ impl SecretString {
 pub trait CredentialStore: Send + Sync {
     fn get_access_token(&self) -> Result<SecretString, String>;
     // Not used by the proxy yet — refresh-token rotation is stubbed
-    // until real Schwab OAuth lands. Kept in the trait so the
+    // until real broker OAuth lands. Kept in the trait so the
     // backend contract is visible.
     #[allow(dead_code)]
     fn get_refresh_token(&self) -> Result<SecretString, String>;
@@ -51,7 +51,7 @@ pub struct StubCredentialStore {
 
 impl StubCredentialStore {
     pub fn new() -> Self {
-        eprintln!("WARNING: using STUB credential store — no real Schwab credentials. Do not trade with this.");
+        eprintln!("WARNING: using STUB credential store — no real broker credentials. Do not trade with this.");
         Self { access_token: Mutex::new("STUB-ACCESS-TOKEN-NOT-A-REAL-TOKEN".into()) }
     }
 }

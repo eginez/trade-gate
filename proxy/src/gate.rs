@@ -32,7 +32,7 @@ use std::sync::{Arc, Mutex};
 /// Hyper client used for store-and-forward POSTs (see gate docs).
 pub type PostClient = Client<hyper_rustls::HttpsConnector<HttpConnector>, Full<Bytes>>;
 
-/// Upstream (broker) address, from env. TLS by default; plain HTTP
+/// Upstream (broker) address, from the --upstream-host startup argument. TLS by default; plain HTTP
 /// only for the mock upstream in tests.
 #[derive(Debug, Clone)]
 pub struct Upstream {
@@ -210,7 +210,7 @@ impl Gate {
 
 fn parse_price_from_quote_body(body: &[u8], symbol: &str) -> Option<f64> {
     // Accept both the mock shape {"VOO": {"lastPrice": 500.0}} and the
-    // Schwab shape {"VOO": {"quote": {"lastPrice": 500.0}}}.
+    // broker shape {"VOO": {"quote": {"lastPrice": 500.0}}}.
     let v: serde_json::Value = serde_json::from_slice(body).ok()?;
     fn find_last_price(v: &serde_json::Value) -> Option<f64> {
         match v {
@@ -257,7 +257,7 @@ impl ProxyHttp for Gate {
             .await;
         }
 
-        // Read and buffer the whole body (small Schwab JSON, < 64 KiB).
+        // Read and buffer the whole body (small order JSON, < 64 KiB).
         // A single read_request_body() call returns one chunk only —
         // loop until None so chunked / multi-chunk bodies are whole.
         //

@@ -3,7 +3,7 @@
 # These JSON files are what `pkl eval` produces from the schemas in
 # config/schemas/ and the data in config/policies/:
 #
-#   pkl eval ../policies/schwab-policies.pkl -f json > policies.json
+#   pkl eval ../policies/policies.pkl -f json > policies.json
 #   pkl eval ../policies/allowlist.pkl       -f json > allowlist.json
 #
 # HAND-GENERATED PENDING PKL EVAL: the pkl CLI was not available on

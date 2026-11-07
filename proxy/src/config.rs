@@ -1,6 +1,6 @@
 //! Configuration types: the Rust mirror of the Pkl schemas.
 //!
-//! `config/schemas/PolicySet.pkl` and `config/schemas/SchwabAllowlist.pkl`
+//! `config/schemas/PolicySet.pkl` and `config/schemas/Allowlist.pkl`
 //! are the source of truth. These serde structs must match them field
 //! for field; a CI check deserializes the Pkl-rendered JSON in
 //! `config/generated/` into these structs, so Pkl/Rust drift fails

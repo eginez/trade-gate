@@ -1,8 +1,16 @@
 //! trade-gate-proxy: policy-gated reverse proxy for scheduled purchases.
 //!
-//! Usage (env):
-//!   PROXY_LISTEN=127.0.0.1:8080  UPSTREAM_HOST=api.schwabapi.com:443
-//!   UPSTREAM_TLS=true             POLICIES_PATH=config/generated/policies.json
+//! Usage:
+//!   trade-gate-proxy --upstream-host <host:port>
+//!
+//! The upstream host is a MANDATORY startup argument — there is no
+//! default and no broker host is hardcoded anywhere in this binary.
+//! In production that is the broker API host; in tests it is the
+//! mock upstream (e.g. `--upstream-host 127.0.0.1:18099`).
+//!
+//! Other settings are env vars:
+//!   PROXY_LISTEN=127.0.0.1:8080  UPSTREAM_TLS=true
+//!   POLICIES_PATH=config/generated/policies.json
 //!   ALLOWLIST_PATH=config/generated/allowlist.json
 //!   DB_PATH=buys.db               CREDENTIAL_STORE=stub
 //!
@@ -30,9 +38,61 @@ fn env_or(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
+fn usage() -> &'static str {
+    "usage: trade-gate-proxy --upstream-host <host:port>\n\
+     \n\
+     --upstream-host is required. There is no default upstream and no\n\
+     broker host is hardcoded in this binary.\n\
+     Example: trade-gate-proxy --upstream-host 127.0.0.1:18099"
+}
+
+/// Parse the mandatory `--upstream-host <host:port>` startup argument.
+/// Exits (code 2) with usage on stderr when it is missing, empty,
+/// malformed (no `host:port`), or when an unknown argument is given.
+fn parse_upstream_host() -> String {
+    let mut args = std::env::args().skip(1);
+    let mut upstream_host: Option<String> = None;
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-h" | "--help" => {
+                eprintln!("{}", usage());
+                std::process::exit(0);
+            }
+            "--upstream-host" => match args.next() {
+                Some(v) => upstream_host = Some(v),
+                None => {
+                    eprintln!("error: --upstream-host needs a value\n\n{}", usage());
+                    std::process::exit(2);
+                }
+            },
+            _ if arg.starts_with("--upstream-host=") => {
+                upstream_host = Some(arg["--upstream-host=".len()..].to_string());
+            }
+            _ => {
+                eprintln!("error: unknown argument: {arg}\n\n{}", usage());
+                std::process::exit(2);
+            }
+        }
+    }
+    let host = match upstream_host {
+        Some(h) if !h.trim().is_empty() => h,
+        _ => {
+            eprintln!("error: --upstream-host is required\n\n{}", usage());
+            std::process::exit(2);
+        }
+    };
+    // The gate builds `{scheme}://{host}{path}` and uses the part
+    // before ':' as the Host header, so host:port is required.
+    if !host.contains(':') || host.split(':').next().map_or(true, str::is_empty) {
+        eprintln!("error: --upstream-host must be host:port, got {host:?}\n\n{}", usage());
+        std::process::exit(2);
+    }
+    host
+}
+
 fn main() {
     let listen = env_or("PROXY_LISTEN", "127.0.0.1:8080");
-    let upstream_host = env_or("UPSTREAM_HOST", "api.schwabapi.com:443");
+    let upstream_host = parse_upstream_host();
     let upstream_tls = env_or("UPSTREAM_TLS", "true") != "false";
     let policies_path = env_or("POLICIES_PATH", "config/generated/policies.json");
     let allowlist_path = env_or("ALLOWLIST_PATH", "config/generated/allowlist.json");

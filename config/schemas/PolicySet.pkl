@@ -4,7 +4,7 @@
 // policy *can* be. The actual permits live in config/policies/.
 //
 // Deny-by-default is structural:
-//  - `SchwabAction` is a closed union of exactly the 7 allowed actions.
+//  - `BrokerAction` is a closed union of exactly the 7 allowed actions.
 //    Any other action, a wildcard, or "delete_order" / "sell" is a
 //    Pkl compile error, not a runtime denial.
 //  - There is no allow-all field, no wildcard field, and no forbids
@@ -16,7 +16,7 @@
 
 /// The only actions the script may ever perform. Closed — nothing else
 /// is representable.
-typealias SchwabAction = "get_account_numbers" | "get_account"
+typealias BrokerAction = "get_account_numbers" | "get_account"
   | "list_orders" | "get_order" | "get_quote"
   | "preview_order" | "place_order"
 
@@ -39,7 +39,7 @@ class OrderBody {
 
 class Permit {
   id: String
-  action: SchwabAction
+  action: BrokerAction
   method: Method
   // Path template. Literal segments, or a single-segment parameter
   // in braces ({hash}, {orderId}). No `*`, no `**`, no regex.

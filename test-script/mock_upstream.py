@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Mock broker API for trade-gate tests. NOT Schwab, NOT a trading script.
+"""Mock broker API for trade-gate tests. NOT a real broker, NOT a trading script.
 
-A tiny fake of the Schwab Trader API shapes the proxy forwards to:
+A tiny fake of the broker API shapes the proxy forwards to:
 quotes, accountNumbers, account, orders, previewOrder, placeOrder.
 It runs on localhost only, holds no real money, and requires an
 Authorization header — the proxy is supposed to inject one, so a

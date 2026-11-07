@@ -26,7 +26,7 @@ RUN curl -fsSL -o /usr/local/bin/pkl \
     && chmod +x /usr/local/bin/pkl
 WORKDIR /build
 COPY config/ ./config/
-RUN pkl eval ./config/policies/schwab-policies.pkl -f json > /build/policies.json \
+RUN pkl eval ./config/policies/policies.pkl -f json > /build/policies.json \
  && pkl eval ./config/policies/allowlist.pkl -f json > /build/allowlist.json \
  && diff -u ./config/generated/policies.json /build/policies.json \
  && diff -u ./config/generated/allowlist.json /build/allowlist.json

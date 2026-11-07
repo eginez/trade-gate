@@ -1,6 +1,6 @@
 #!/bin/sh
 # test-script/run.sh — build the proxy, run the unit tests, then the
-# end-to-end policy probe against the mock upstream. No Schwab, no Docker.
+# end-to-end policy probe against the mock upstream. No real broker, no Docker.
 set -eu
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.cargo/bin:$PATH"

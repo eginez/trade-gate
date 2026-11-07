@@ -25,6 +25,6 @@ sh_test(
         "config/generated/allowlist.json",
         "config/generated/policies.json",
         "config/policies/allowlist.pkl",
-        "config/policies/schwab-policies.pkl",
+        "config/policies/policies.pkl",
     ],
 )
