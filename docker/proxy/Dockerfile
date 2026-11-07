@@ -23,14 +23,24 @@
 ARG PKL_VERSION=0.27.0
 # NOTE: verify PKL_VERSION against https://github.com/apple/pkl/releases
 # before building — the download URL pattern is
-#   https://github.com/apple/pkl/releases/download/<version>/pkl-linux-amd64
+#   https://github.com/apple/pkl/releases/download/<version>/pkl-linux-<arch>
+# with <arch> = amd64 or aarch64. The arch MUST match the build
+# platform: the pkl CLI is a GraalVM native image, and the amd64
+# binary run under emulation on arm64 dies with SIGTRAP (exit 133)
+# — that is what the hardcoded pkl-linux-amd64 did on Apple Silicon.
 
 FROM debian:bookworm-slim AS pkl-builder
 ARG PKL_VERSION
+ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-RUN curl -fsSL -o /usr/local/bin/pkl \
-      "https://github.com/apple/pkl/releases/download/${PKL_VERSION}/pkl-linux-amd64" \
+RUN case "$TARGETARCH" in \
+      amd64) PKL_ARCH=amd64 ;; \
+      arm64) PKL_ARCH=aarch64 ;; \
+      *) echo "unsupported arch: $TARGETARCH" >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL -o /usr/local/bin/pkl \
+      "https://github.com/apple/pkl/releases/download/${PKL_VERSION}/pkl-linux-${PKL_ARCH}" \
     && chmod +x /usr/local/bin/pkl
 WORKDIR /build
 COPY config/ ./config/
