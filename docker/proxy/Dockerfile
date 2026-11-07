@@ -31,7 +31,7 @@ RUN pkl eval ./config/policies/policies.pkl -f json > /build/policies.json \
  && diff -u ./config/generated/policies.json /build/policies.json \
  && diff -u ./config/generated/allowlist.json /build/allowlist.json
 
-FROM rust:1.85-bookworm AS rust-builder
+FROM rust:1.99-bookworm AS rust-builder
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY proxy/ ./proxy/
