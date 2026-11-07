@@ -4,8 +4,10 @@ rust_binary(
     name = "trade-gate-proxy",
     srcs = glob(["src/**/*.rs"]),
     edition = "2021",
-    deps = [
+    proc_macro_deps = [
         "@crates//:async-trait",
+    ],
+    deps = [
         "@crates//:bytes",
         "@crates//:http-body-util",
         "@crates//:hyper",
