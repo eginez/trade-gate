@@ -93,10 +93,11 @@ cargo test
 cargo build --release -p trade-gate-proxy
 ```
 
-> Note: Bazel was not available on the machine this skeleton was
-> first built on, so the Bazel build is **not verified** here — the
-> Cargo build and tests are. `bazel build //...` is the first thing
-> to verify on a machine with Bazel installed.
+> Verified 2026-11-07: `bazel build //...` and `bazel test //...`
+> (2/2) pass on the Linux build VM; `cargo test` is 17/17 and the
+> probe is 18/18. On macOS, `.bazelrc` points Bazel at Homebrew's
+> cmake (see `docs/development.md`); a clean `bazel build //...`
+> on the owner's Mac is still unconfirmed.
 
 ## Run the policy tests
 

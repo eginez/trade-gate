@@ -1,9 +1,8 @@
 # MODULE.bazel — Bazel is canonical for this repo.
 #
-# NOT VERIFIED on the machine this skeleton was first built on
-# (Bazel was not installed there). Verify with `bazel build //...`
-# on a machine with Bazel installed; the Cargo build is verified
-# (see README.md).
+# Verified 2026-11-07: `bazel build //...` and `bazel test //...`
+# (2/2) pass on the Linux build VM. See docs/development.md for
+# the fixes that got it green on Bazel 9.3.2.
 
 module(
     name = "trade_gate",

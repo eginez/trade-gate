@@ -26,5 +26,9 @@ rust_binary(
 rust_test(
     name = "trade_gate_proxy_test",
     crate = ":trade-gate-proxy",
+    # The test module uses include_str! on the generated JSON, which is
+    # resolved at COMPILE time: the files must be compile inputs, not
+    # just runtime data (data = runfiles only, invisible to rustc).
+    compile_data = ["//:generated_config"],
     data = ["//:generated_config"],
 )

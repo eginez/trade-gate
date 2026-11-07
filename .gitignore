@@ -2,6 +2,10 @@
 # (Cargo.lock is deliberately NOT ignored: Bazel's crate_universe
 # reads it, and a binary repo commits its lockfile.)
 /target/
+# Bazel output symlinks created by `bazel build` in the workspace root.
+# (MODULE.bazel.lock is deliberately NOT ignored: it pins module
+# versions for reproducible builds.)
+/bazel-*
 *.db
 *.db-journal
 __pycache__/
