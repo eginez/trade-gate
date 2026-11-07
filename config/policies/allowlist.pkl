@@ -1,0 +1,15 @@
+// allowlist.pkl — config/data ONLY. The schema is in
+// config/schemas/SchwabAllowlist.pkl; this file just fills it in.
+//
+// EXAMPLE VALUES ONLY — not decisions. The ticker list, the per-run
+// cap, and the rolling-window definition are still open. Adjust them
+// here, re-render, rebuild the proxy image.
+//
+// Render with:
+//   pkl eval allowlist.pkl -f json > ../generated/allowlist.json
+
+amends "../schemas/SchwabAllowlist.pkl"
+
+symbols = new { "VOO" "SCHD" }
+maxDollarsPerRun = 1000
+rollingWindowDays = 28

@@ -1,0 +1,30 @@
+# Root BUILD.bazel: the generated Pkl JSON is a checked-in data
+# dependency of the proxy, and the Pkl sources are the source of
+# truth for it.
+
+exports_files([
+    "Cargo.toml",
+    "Cargo.lock",
+])
+
+filegroup(
+    name = "generated_config",
+    srcs = [
+        "config/generated/allowlist.json",
+        "config/generated/policies.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Re-render check: when `pkl` is available, the rendered JSON must
+# match the checked-in files. Run with `bazel test //:check_generated`.
+sh_test(
+    name = "check_generated",
+    srcs = ["tools/check-generated.sh"],
+    data = [
+        "config/generated/allowlist.json",
+        "config/generated/policies.json",
+        "config/policies/allowlist.pkl",
+        "config/policies/schwab-policies.pkl",
+    ],
+)

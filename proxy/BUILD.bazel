@@ -1,0 +1,28 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+
+rust_binary(
+    name = "trade-gate-proxy",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2021",
+    deps = [
+        "@crates//:async-trait",
+        "@crates//:bytes",
+        "@crates//:http-body-util",
+        "@crates//:hyper",
+        "@crates//:hyper-rustls",
+        "@crates//:hyper-util",
+        "@crates//:pingora",
+        "@crates//:rusqlite",
+        "@crates//:serde",
+        "@crates//:serde_json",
+        "@crates//:tokio",
+    ],
+    data = ["//:generated_config"],
+    visibility = ["//visibility:public"],
+)
+
+rust_test(
+    name = "trade_gate_proxy_test",
+    crate = ":trade-gate-proxy",
+    data = ["//:generated_config"],
+)

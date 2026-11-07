@@ -1,0 +1,2 @@
+# WORKSPACE.bazel — empty on purpose. This repo uses Bzlmod
+# (MODULE.bazel). Kept so older Bazel versions do not complain.

@@ -1,0 +1,57 @@
+// PolicySet.pkl — schema ONLY. No data lives here.
+//
+// This is the schema for the permits-only policy. It defines what a
+// policy *can* be. The actual permits live in config/policies/.
+//
+// Deny-by-default is structural:
+//  - `SchwabAction` is a closed union of exactly the 7 allowed actions.
+//    Any other action, a wildcard, or "delete_order" / "sell" is a
+//    Pkl compile error, not a runtime denial.
+//  - There is no allow-all field, no wildcard field, and no forbids
+//    list. An empty `permits` list denies everything; the only way to
+//    allow something is a fully-specified permit entry.
+//  - The principal and the resource are not fields at all: the
+//    principal is always the script, the resource is always the
+//    broker API. They are hardcoded in the Rust evaluator.
+
+/// The only actions the script may ever perform. Closed — nothing else
+/// is representable.
+typealias SchwabAction = "get_account_numbers" | "get_account"
+  | "list_orders" | "get_order" | "get_quote"
+  | "preview_order" | "place_order"
+
+typealias Method = "GET" | "POST"
+
+/// The body rule for an order request. This is a rule, not a concrete
+/// order: it says which values are allowed, not what the values are.
+/// The symbol is checked against the allowlist in Rust, the quantity
+/// must be >= 1 in Rust, and the dollar cap is checked in Rust with a
+/// live quote price. A SELL is unrepresentable: `instruction` is the
+/// literal "BUY".
+class OrderBody {
+  session: "NORMAL"
+  duration: "DAY"
+  orderTypes: Listing<"MARKET" | "LIMIT">(length >= 1)
+  orderStrategyType: "SINGLE"
+  instruction: "BUY"
+  assetTypes: Listing<"EQUITY" | "ETF">(length >= 1)
+}
+
+class Permit {
+  id: String
+  action: SchwabAction
+  method: Method
+  // Path template. Literal segments, or a single-segment parameter
+  // in braces ({hash}, {orderId}). No `*`, no `**`, no regex.
+  // Must start with /trader/v1/ or /marketdata/v1/.
+  path: String(matches(Regex("^/(trader|marketdata)/v1/.*")))
+  // Only preview_order / place_order carry a body rule.
+  body: OrderBody?
+  // Only place_order carries a dollar cap (enforced in Rust with a
+  // live quote price: quantity * price <= maxDollars).
+  maxDollars: Int(this > 0)?
+}
+
+class PolicySet {
+  permits: Listing<Permit>(isDistinctBy((p) -> p.action))
+}

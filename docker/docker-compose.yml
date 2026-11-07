@@ -1,0 +1,194 @@
+# trade-gate — Docker Compose
+#
+# Three services, two networks. The test container can only talk to
+# the proxy. The proxy is the only container with (mock) internet.
+# The mock stands in for the broker API on the external leg — it is
+# NOT Schwab, and no real broker is ever contacted from this file.
+#
+#   test-script --(internal only)--> proxy --(external)--> mock
+#                                        (in production: api.schwabapi.com)
+#
+# Run the policy probe (fresh DB each time):
+#   docker compose down -v
+#   docker compose up --build --abort-on-container-exit --exit-code-from test-script
+#   docker compose down -v
+#
+# Run the human-readable demo instead of the probe:
+#   docker compose down -v
+#   docker compose --profile demo up --build --abort-on-container-exit --exit-code-from demo
+#   docker compose down -v
+#
+# Weekly token keep-alive (no test script, no buy):
+#   docker compose --profile refresh up refresh
+#   docker compose down
+#
+# Nothing in this file holds a secret. The proxy reads credentials
+# at startup from the credential store; the test container gets no
+# secrets at all — only PROXY_BASE.
+
+services:
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/proxy/Dockerfile
+    image: trade-gate-proxy:latest
+    container_name: trade-gate-proxy
+    restart: "no"
+    # NO ports published to the host. Reachable only inside the
+    # internal network, as `proxy:8080`.
+    networks:
+      internal:
+        aliases:
+          - proxy
+      external: {}
+    environment:
+      PROXY_LISTEN: "0.0.0.0:8080"
+      UPSTREAM_HOST: "mock:18099"
+      UPSTREAM_TLS: "false"
+      POLICIES_PATH: /etc/trade-gate/policies.json
+      ALLOWLIST_PATH: /etc/trade-gate/allowlist.json
+      DB_PATH: /var/lib/trade-gate/buys.db
+      CREDENTIAL_STORE: stub
+    volumes:
+      # Rolling-window DB: proxy only. No other container mounts it.
+      - proxy-data:/var/lib/trade-gate
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  # Mock broker API. Stands in for api.schwabapi.com in tests.
+  mock:
+    build:
+      context: ..
+      dockerfile: docker/test-script/Dockerfile
+    image: trade-gate-test:latest
+    container_name: trade-gate-mock
+    restart: "no"
+    command: ["python", "/app/mock_upstream.py"]
+    networks:
+      - external
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18099/healthz')"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  test-script:
+    build:
+      context: ..
+      dockerfile: docker/test-script/Dockerfile
+    image: trade-gate-test:latest
+    container_name: trade-gate-test-script
+    restart: "no"
+    # NOT the trading script. A policy exerciser only.
+    command: ["python", "/app/probe.py"]
+    depends_on:
+      proxy:
+        condition: service_healthy
+      mock:
+        condition: service_healthy
+    # ONLY the internal network. No internet, no host network,
+    # no DNS for anything except `proxy`.
+    networks:
+      - internal
+    environment:
+      PROXY_BASE: "http://proxy:8080"
+      # No broker token, no App Key/Secret, no refresh token here.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    mem_limit: 256m
+    cpus: "0.5"
+    pids_limit: 64
+
+  demo:
+    profiles:
+      - demo
+    build:
+      context: ..
+      dockerfile: docker/demo/Dockerfile
+    image: trade-gate-demo:latest
+    container_name: trade-gate-demo
+    restart: "no"
+    # NOT the trading script. A human-readable demo of the proxy rules.
+    depends_on:
+      proxy:
+        condition: service_healthy
+      mock:
+        condition: service_healthy
+    # ONLY the internal network, like the test script.
+    networks:
+      - internal
+    environment:
+      PROXY_BASE: "http://proxy:8080"
+      # No broker token, no App Key/Secret, no refresh token here.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    mem_limit: 256m
+    cpus: "0.5"
+    pids_limit: 64
+
+  refresh:
+    profiles:
+      - refresh
+    image: trade-gate-proxy:latest
+    container_name: trade-gate-refresh
+    restart: "no"
+    command: ["trade-gate-proxy", "refresh-token"]
+    networks:
+      - external
+    environment:
+      POLICIES_PATH: /etc/trade-gate/policies.json
+      DB_PATH: /var/lib/trade-gate/buys.db
+      CREDENTIAL_STORE: stub
+    volumes:
+      - proxy-data:/var/lib/trade-gate
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  # Internal = no internet egress, ever. Containers on this network
+  # can only talk to each other. This is what isolates the script.
+  internal:
+    internal: true
+    driver: bridge
+  # The proxy's internet leg (mock in tests, broker in production).
+  # Only the proxy (and refresh) attach here, plus the mock.
+  external:
+    driver: bridge
+
+volumes:
+  proxy-data:

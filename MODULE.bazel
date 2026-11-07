@@ -1,0 +1,29 @@
+# MODULE.bazel — Bazel is canonical for this repo.
+#
+# NOT VERIFIED on the machine this skeleton was first built on
+# (Bazel was not installed there). Verify with `bazel build //...`
+# on a machine with Bazel installed; the Cargo build is verified
+# (see README.md).
+
+module(
+    name = "trade_gate",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "rules_rust", version = "0.61.0")
+bazel_dep(name = "platforms", version = "0.0.11")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.85.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+crate = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//:Cargo.toml", "//proxy:Cargo.toml"],
+)
+use_repo(crate, "crates")

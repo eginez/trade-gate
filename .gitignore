@@ -1,0 +1,12 @@
+# Build outputs, local state, secrets — never commit these.
+# (Cargo.lock is deliberately NOT ignored: Bazel's crate_universe
+# reads it, and a binary repo commits its lockfile.)
+/target/
+*.db
+*.db-journal
+__pycache__/
+*.pyc
+.env
+*.pem
+*.key
+.DS_Store

@@ -1,0 +1,26 @@
+[package]
+name = "trade-gate-proxy"
+version = "0.1.0"
+edition = "2021"
+description = "Policy-gated reverse proxy for scheduled purchases (Pkl permits-only, Pingora)"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "trade-gate-proxy"
+path = "src/main.rs"
+
+[dependencies]
+pingora = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rusqlite = { workspace = true }
+bytes = { workspace = true }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+hyper-rustls = { workspace = true }
+http-body-util = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
