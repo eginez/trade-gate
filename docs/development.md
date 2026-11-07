@@ -28,7 +28,7 @@ the README and `MODULE.bazel` was wrong after that run.
   Rust **1.99.0**, edition 2021. `MODULE.bazel.lock` is committed
   — it pins the resolved module versions.
 - **Rust 1.99.0** in `MODULE.bazel` *and* in
-  `docker/proxy/Dockerfile` (`rust:1.99-bookworm` builder). Keep
+  `docker/proxy/Dockerfile` (`rust:1.99-alpine` builder). Keep
   them in step: `lock_api 0.5.0` (via `parking_lot 0.13`) uses
   `ptr_as_ref_unchecked`, only stabilized in early 2026
   (~1.98/1.99), so rustc 1.85 fails on it with E0658.
@@ -150,8 +150,29 @@ python3 demo/demo.py        # prints the 11-check walkthrough
 `docker/docker-compose.yml` runs proxy + mock + test-script
 (fresh DB each run). The proxy image (`docker/proxy/Dockerfile`)
 is multi-stage: Pkl eval at build time only, Rust builder, then a
-minimal runtime. The test-script image is Python + the probe and
-mock.
+minimal runtime. The test-script and demo images are Python + the
+probe/mock/demo.
+
+**Images are Alpine where possible (2026-11-07).** The proxy
+builds as a static musl binary (`rust:1.99-alpine` builder,
+`alpine:3.22` runtime + `ca-certificates` only) — musl works
+because `rusqlite` is `bundled`, so SQLite is compiled in and
+nothing links against the host libc. The builder maps
+`$TARGETARCH` (amd64/arm64) to the matching `*-unknown-linux-musl`
+triple. Two exceptions, both documented in the Dockerfile: the
+Pkl stage stays on `debian:bookworm-slim` because the pkl binary
+is glibc-linked and will not run on musl (the old JRE base is
+gone — the pkl CLI is a native binary and never needed Java), and
+the runtime healthcheck's `wget` is busybox wget, already in
+Alpine. The Python images are `python:3.13-alpine` (pure stdlib,
+so musl costs nothing). All images run as `USER 1000:1000`.
+
+**Musl build not yet verified.** The musl proxy build could not
+be verified directly on the Linux build VM: the musl.cc cross-gcc
+segfaults there, and `musl-tools` is unavailable while apt is
+locked by the Podman install. First real test is the Podman
+Compose build, which builds the proxy image in the Alpine
+builder — see the Podman note below.
 
 **Known limitation:** Docker containers cannot start on the Linux
 build VM — the host kernel has no bridge module and the process
@@ -161,7 +182,12 @@ caps lack `CAP_NET_ADMIN` (`docker run` fails with `setns` /
 handshake timeout through the egress proxy). The Compose file as
 written cannot run there. Options: record the local run (the
 demo GIF in `demo/` was made that way), or run Compose on a
-machine with a real Docker daemon.
+machine with a real Docker daemon. **Podman test in progress
+(2026-11-07):** Podman is being tried on the same VM, since it
+does not need a daemon or a bridge — install + a hello-world
+container first, then the demo Compose run. Result pending; if
+Podman works there, the Compose file needs no changes (it is
+plain Compose: bridge/internal networks, healthchecks, profiles).
 
 ## Conventions
 
