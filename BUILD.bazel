@@ -20,9 +20,21 @@ filegroup(
 
 # Re-render check: when `pkl` is available, the rendered JSON must
 # match the checked-in files. Run with `bazel test //:check_generated`.
+#
+# The script source is NOT executable in the repo as pushed (the
+# snapshot push does not preserve file modes), and sh_test requires an
+# executable src. So a genrule copies it and chmods the copy; the
+# test runs the generated file, not the source.
+genrule(
+    name = "check_generated_sh",
+    srcs = ["tools/check-generated.sh"],
+    outs = ["check-generated.sh"],
+    cmd = "cp $(location tools/check-generated.sh) $@ && chmod +x $@",
+)
+
 sh_test(
     name = "check_generated",
-    srcs = ["tools/check-generated.sh"],
+    srcs = [":check_generated_sh"],
     data = [
         "config/generated/allowlist.json",
         "config/generated/policies.json",

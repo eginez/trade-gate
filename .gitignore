@@ -10,3 +10,7 @@ __pycache__/
 *.pem
 *.key
 .DS_Store
+# Demo — local only, never pushed. The demo script and its
+# recordings (.cast, .gif) live here for the owner, not the repo.
+demo/
+docker/demo/
