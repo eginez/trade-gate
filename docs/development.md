@@ -88,6 +88,22 @@ Rust embedding. `pkl eval` renders JSON to `config/generated/`
 installed on the build VM, so `tools/check-generated.sh` exits 0
 by skipping there. See `docs/policy.md` for the change workflow.
 
+## CI
+
+`.github/workflows/ci.yml` runs `bazel build //...` and
+`bazel test //...` on `ubuntu-latest` and `macos-latest`, on
+**pushes to `main` only** (no `pull_request` trigger). Setup is
+`bazel-contrib/setup-bazel@0.19.0` with three caches:
+`bazelisk-cache` (the Bazel binary, keyed on `.bazelversion`),
+`disk-cache` (build outputs, per OS + workflow), and
+`repository-cache` (module/crate downloads, shared across
+workflows). `.bazelversion` pins Bazel **9.3.2** — the version the
+build was verified against. The macOS job runs
+`brew install cmake` first (a no-op if already present); the
+repo `.bazelrc` handles the rest of the macOS sandbox setup.
+First run on a cold cache downloads the toolchain and crates
+(~20 min); later runs reuse the caches.
+
 ## Running the tests
 
 ```sh
