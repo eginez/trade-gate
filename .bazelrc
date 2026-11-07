@@ -1,0 +1,13 @@
+# Bazel build configuration for trade-gate.
+#
+# Enable per-OS config sections below (build:macos, build:linux, ...).
+common --enable_platform_specific_config
+
+# macOS: Homebrew's cmake (/opt/homebrew/bin/cmake) is NOT on the Bazel
+# sandbox PATH, so the libz-ng-sys build script fails with
+# "is `cmake` not installed?" even when `brew install cmake` says it is
+# installed. Point the `cmake` crate at the absolute path, and run Rust
+# build scripts outside the sandbox so host tools are reachable.
+# (Linux builds are unaffected: these flags only apply under build:macos.)
+build:macos --action_env=CMAKE=/opt/homebrew/bin/cmake
+build:macos --strategy=CargoBuildScriptRun=local
